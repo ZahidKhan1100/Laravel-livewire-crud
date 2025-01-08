@@ -4,13 +4,12 @@ namespace App\Livewire\Items;
 
 use App\Models\Category;
 use App\Models\Item;
+use Illuminate\Support\Facades\Redis;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class ShowItems extends Component
 {
-    // public $items;
-    // public $categories;
     public $search;
     public $searchCategories = [];
     public $cartItems = [];
@@ -22,28 +21,24 @@ class ShowItems extends Component
     public function addToCart($itemId)
     {
         $item = Item::find($itemId);
+        $session = json_decode(Redis::get('cart'), true);
 
-        $session = session()->get('cart');
+
+
 
         if ($session) {
-            $this->cartItems = $session;
-        }
-        
-        $found = false;
-        if ($this->cartItems) {
-            foreach ($this->cartItems as &$cartItem) {
-                if ($cartItem['id'] === $item->id) {
-                    $cartItem['quantity'] += 1;
-                    $cartItem['price'] = $item->price;
-                    $cartItem['name'] = $item->name;
-                    $cartItem['total'] = $cartItem['quantity'] * $cartItem['price'];
-                    $found = true;
-                    break;
+            $itemCollection = collect($session);
+            $this->cartItems = $itemCollection->map(function ($item) use ($itemId) {
+                if ($item['id'] === $itemId) {
+                    $item['id'] = $itemId;
+                    $item['name'] = $item['name'];
+                    $item['price'] = $item['price'];
+                    $item['quantity'] = $item['quantity'] + 1;
+                    $item['total'] = $item['quantity'] * $item['price'];
                 }
-            }
-        }
-
-        if (!$found) {
+                return $item;
+            })->toArray();
+        } else {
             $this->cartItems[] = [
                 'id' => $item->id,
                 'name' => $item->name,
@@ -53,11 +48,12 @@ class ShowItems extends Component
             ];
         }
 
-        session()->remove('cart');
-        session()->put('cart', $this->cartItems);
-        $cartCount = count($this->cartItems);
 
-        $this->dispatch('cart-updated', ['count' => $cartCount, 'cartItems' => $this->cartItems]);
+        Redis::del('cart');
+
+        Redis::set('cart', json_encode($this->cartItems));
+
+        $this->dispatch('cartUpdated');
     }
 
     public function filterItems()
@@ -78,6 +74,7 @@ class ShowItems extends Component
 
     public function render()
     {
+
         // Build the query dynamically based on search term and selected categories
         $query = Item::query();
 
