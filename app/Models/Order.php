@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    //
+    // protected $table = 'orders';
     protected $fillable = [
         'order_number',
         'user_id',
@@ -24,6 +24,7 @@ class Order extends Model
         'items' => 'array',
     ];
 
+    // Define the relationship between the Order and User models
     public function user()
     {
         return $this->belongsTo(User::class);

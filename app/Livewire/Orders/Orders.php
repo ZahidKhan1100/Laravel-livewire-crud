@@ -14,6 +14,7 @@ class Orders extends Component
         $this->orders = Order::all();
     }
 
+    // Update the status of an order
     public function updateStatus($orderId, $status)
     {
         $order = Order::find($orderId);
@@ -22,6 +23,7 @@ class Orders extends Component
         $this->orders = Order::all();
     }
 
+    // Update the notes of an order
     public function updateNotes($orderId, $notes)
     {
         $order = Order::find($orderId);
@@ -30,6 +32,7 @@ class Orders extends Component
         $this->orders = Order::all();
     }
 
+    // Delete an order
     public function deleteOrder($orderId)
     {
         $order = Order::find($orderId);
