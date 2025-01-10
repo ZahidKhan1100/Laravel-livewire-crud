@@ -12,7 +12,12 @@
 
 
     <header class="relative flex items-center justify-between px-4 py-4 mb-3 bg-white shadow-xl">
+       <div class="flex items-center space-x-4">
         <h1 class="px-4 text-3xl">{{ config('app.name') }}</h1>
+        <a href="/" class="px-4 text-3xl" wire:navigate>Products</a>
+        <a href="/orders" class="px-4 text-3xl" wire:navigate>Orders</a>
+
+       </div>
         <button id="cart-button" class="relative flex items-center justify-center">
             <livewire:cart.cart-count />
         </button>
@@ -24,7 +29,7 @@
         </div>
 
     </header>
-    <main>
+    <main class="w-full h-full">
         {{ $slot }}
     </main>
     @livewireScripts

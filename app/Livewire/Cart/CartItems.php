@@ -12,36 +12,23 @@ class CartItems extends Component
 
     protected $listeners = ['cartUpdated'];
 
-    public function mount()
-    {
-        // $this->cartItems = session()->get('cart');
-        $this->cartItems = json_decode(Redis::get('cart'), true);
-    }
 
     public function clearCart()
     {
-        $this->cartItems = [];
-        // session()->remove('cart');
         Redis::del('cart');
-
-
-        // session()->put('cart', $this->cartItems);
-        Redis::set('cart', json_encode($this->cartItems));
+        $this->cartItems = [];
         $this->dispatch('clearCount');
     }
 
     #[On('cartUpdated')]
     public function cartUpdated()
     {
-        // $this->cartItems = session()->get('cart');
-        $this->cartItems = json_decode(Redis::get('cart'), true);
-        $this->dispatch('cartItemUpdated');
-
+        $cart = Redis::get('cart');
+        $this->cartItems = $cart ? json_decode($cart, true) : [];
     }
 
     public function incrementQuantity($itemId)
     {
-        // $cartItems = session()->get('cart', []);
         $cartItems = json_decode(Redis::get('cart'), true);
 
         foreach ($cartItems as &$cartItem) {
@@ -52,44 +39,58 @@ class CartItems extends Component
             }
         }
 
-        // session()->remove('cart');
         Redis::del('cart');
-
-
-        // session()->put('cart', $cartItems);
         Redis::set('cart', json_encode($cartItems));
 
         $this->cartItems = $cartItems;
-        $this->dispatch('cartItemUpdated');
-
+        $this->dispatch('cartUpdated');
     }
 
     public function decrementQuantity($itemId)
     {
-        // $cartItems = session()->get('cart');
         $cartItems = json_decode(Redis::get('cart'), true);
 
         foreach ($cartItems as &$cartItem) {
             if ($cartItem['id'] === $itemId) {
+                if ($cartItem['quantity'] === 1) {
+                    $this->removeItem($itemId);
+                    return;
+                }
                 $cartItem['quantity'] -= 1;
                 $cartItem['total'] = $cartItem['quantity'] * $cartItem['price'];
                 break;
             }
         }
 
-        // session()->remove('cart');
         Redis::del('cart');
 
-        // session()->put('cart', $cartItems);
         Redis::set('cart', json_encode($cartItems));
 
         $this->cartItems = $cartItems;
-        $this->dispatch('cartItemUpdated');
+        $this->dispatch('cartUpdated');
+    }
 
+    public function removeItem($itemId)
+    {
+        $cartItems = json_decode(Redis::get('cart'), true);
+
+        foreach ($cartItems as $key => $cartItem) {
+            if ($cartItem['id'] === $itemId) {
+                unset($cartItems[$key]);
+                break;
+            }
+        }
+
+        Redis::del('cart');
+        Redis::set('cart', json_encode($cartItems));
+
+        $this->cartItems = $cartItems;
+        $this->dispatch('cartUpdated');
     }
 
     public function render()
     {
+        $this->cartItems = json_decode(Redis::get('cart'), true);
         return view('livewire.cart.cart-items', ['cartItems' => $this->cartItems]);
     }
 }

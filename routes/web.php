@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\Checkout\Checkout;
+use App\Livewire\Orders\Orders;
 use Illuminate\Support\Facades\Pipeline;
 use Illuminate\Support\Facades\Route;
 use Laravel\Pail\ValueObjects\Origin\Console;
@@ -8,6 +10,9 @@ use MuhammadZahid\UniversalDate\Facades\UniversalDate;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/checkout', Checkout::class)->name('checkout');
+Route::get('/orders',Orders::class)->name('orders');
 
 
 Route::get('/test-dates', function () {

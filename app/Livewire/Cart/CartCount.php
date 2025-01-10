@@ -10,7 +10,7 @@ class CartCount extends Component
 {
     public $cartCount;
 
-    protected $listeners = ['cartItemUpdated', 'clearCount'];
+    protected $listeners = ['cartUpdated', 'clearCount'];
 
     public function mount()
     {
@@ -28,15 +28,19 @@ class CartCount extends Component
     public function clearCount()
     {
         $this->cartCount = 0;
+        Redis::del('cart');
     }
 
-    #[On('cartItemUpdated')]
-    public function cartItemUpdated()
+    #[On('cartUpdated')]
+    public function cartUpdated()
     {
         $cartItems = json_decode(Redis::get('cart'), true);
         $this->cartCount = 0;
-        foreach ($cartItems as $cartItem) {
-            $this->cartCount += $cartItem['quantity'];
+    
+        if ($cartItems) {
+            foreach ($cartItems as $cartItem) {
+                $this->cartCount += $cartItem['quantity'];
+            }
         }
     }
 

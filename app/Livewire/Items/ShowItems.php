@@ -20,38 +20,43 @@ class ShowItems extends Component
 
     public function addToCart($itemId)
     {
-        $item = Item::find($itemId);
+        $itemExist = Item::find($itemId);
         $session = json_decode(Redis::get('cart'), true);
 
-
-
+        $itemUpdated = false;
 
         if ($session) {
             $itemCollection = collect($session);
-            $this->cartItems = $itemCollection->map(function ($item) use ($itemId) {
+            $this->cartItems = $itemCollection->map(function ($item) use ($itemId, &$itemUpdated) {
                 if ($item['id'] === $itemId) {
+                    $itemUpdated = true;
+                    $item['quantity'] += 1;
                     $item['id'] = $itemId;
+                    $item['stock'] = $item['quantity'];
                     $item['name'] = $item['name'];
                     $item['price'] = $item['price'];
-                    $item['quantity'] = $item['quantity'] + 1;
                     $item['total'] = $item['quantity'] * $item['price'];
                 }
                 return $item;
             })->toArray();
-        } else {
+        }
+
+        if (!$itemUpdated) {
             $this->cartItems[] = [
-                'id' => $item->id,
-                'name' => $item->name,
-                'price' => $item->price,
+                'id' => $itemExist->id,
+                'name' => $itemExist->name,
+                'price' => $itemExist->price,
                 'quantity' => 1,
-                'total' => $item->price,
+                'stock' => $itemExist->quantity,
+                'total' => $itemExist->price,
             ];
         }
 
 
-        Redis::del('cart');
 
+        Redis::del('cart');
         Redis::set('cart', json_encode($this->cartItems));
+        $this->cartItems = [];
 
         $this->dispatch('cartUpdated');
     }
@@ -75,23 +80,18 @@ class ShowItems extends Component
     public function render()
     {
 
-        // Build the query dynamically based on search term and selected categories
         $query = Item::query();
 
-        // Apply the search filter if it's set
         if ($this->search) {
             $query->where('name', 'like', '%' . $this->search . '%');
         }
 
-        // Apply the category filter if it's set
         if ($this->searchCategories) {
             $query->whereIn('category_id', $this->searchCategories);
         }
 
-        // Get the filtered items with pagination
         $items = $query->with('category')->paginate(6);
 
-        // Fetch active categories for the filter sidebar
         $categories = Category::where('status', 'active')->get();
 
         return view('livewire.items.show-items', [
